@@ -1,0 +1,654 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Email Generator</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #e0f2fe, #f8fafc);
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 18px;
+
+            box-shadow:
+                0 10px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        h1 {
+            text-align: center;
+
+            margin: 0;
+
+            color: #1e293b;
+        }
+
+        .subtitle {
+            text-align: center;
+
+            color: #64748b;
+
+            margin-top: 8px;
+
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+
+            margin-top: 16px;
+            margin-bottom: 7px;
+
+            font-weight: bold;
+
+            color: #334155;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+
+            padding: 12px;
+
+            border: 1px solid #cbd5e1;
+
+            border-radius: 8px;
+
+            font-size: 15px;
+
+            outline: none;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #4285f4;
+        }
+
+        textarea {
+            height: 110px;
+
+            resize: vertical;
+        }
+
+        .generate-btn {
+            width: 100%;
+
+            margin-top: 22px;
+
+            padding: 14px;
+
+            border: none;
+
+            border-radius: 8px;
+
+            background: #4285f4;
+
+            color: white;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+        .generate-btn:hover {
+            background: #3367d6;
+        }
+
+        .generate-btn:disabled {
+            background: #94a3b8;
+
+            cursor: not-allowed;
+        }
+
+        #emailResult {
+            margin-top: 25px;
+
+            padding: 20px;
+
+            background: #f8fafc;
+
+            border: 1px solid #e2e8f0;
+
+            border-radius: 10px;
+
+            min-height: 120px;
+
+            white-space: pre-wrap;
+
+            line-height: 1.7;
+
+            color: #334155;
+        }
+
+        .copy-btn {
+            width: 100%;
+
+            margin-top: 12px;
+
+            padding: 12px;
+
+            border: none;
+
+            border-radius: 8px;
+
+            background: #16a34a;
+
+            color: white;
+
+            font-size: 15px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            display: none;
+        }
+
+        .copy-btn:hover {
+            background: #15803d;
+        }
+
+        .footer {
+            text-align: center;
+
+            margin-top: 20px;
+
+            font-size: 12px;
+
+            color: #94a3b8;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>📧 AI Email Generator</h1>
+
+    <p class="subtitle">
+        Generate professional emails using Gemini AI
+    </p>
+
+    <label for="apiKey">
+        Gemini API Key
+    </label>
+
+    <input
+        type="password"
+        id="apiKey"
+        autocomplete="off"
+        placeholder="Paste your Gemini API key"
+    >
+
+    <label for="recipient">
+        Recipient
+    </label>
+
+    <input
+        type="text"
+        id="recipient"
+        placeholder="Example: HR Manager"
+    >
+
+
+    <label for="purpose">
+        Email Purpose
+    </label>
+
+    <input
+        type="text"
+        id="purpose"
+        placeholder="Example: Internship application"
+    >
+
+
+    <label for="tone">
+        Email Tone
+    </label>
+
+    <select id="tone">
+
+        <option value="Professional">
+            Professional
+        </option>
+
+        <option value="Formal">
+            Formal
+        </option>
+
+        <option value="Friendly">
+            Friendly
+        </option>
+
+        <option value="Polite">
+            Polite
+        </option>
+
+        <option value="Casual">
+            Casual
+        </option>
+
+    </select>
+
+
+    <label for="points">
+        Important Points
+    </label>
+
+    <textarea
+        id="points"
+        placeholder="Example:
+I am an MCA student.
+I know Java and Python.
+I am looking for a software development internship."
+    ></textarea>
+
+
+    <button
+        class="generate-btn"
+        id="generateButton"
+        onclick="generateEmail()"
+    >
+        ✨ Generate Email
+    </button>
+
+
+    <div id="emailResult">
+        Your generated email will appear here...
+    </div>
+
+
+    <button
+        id="copyButton"
+        class="copy-btn"
+        onclick="copyEmail()"
+    >
+        📋 Copy Email
+    </button>
+
+
+    <div class="footer">
+        Powered by Google Gemini AI
+    </div>
+
+</div>
+
+
+<script>
+
+
+
+const API_URL =
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
+
+async function callGemini(prompt, apiKey) {
+
+    const maxAttempts = 5;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+
+        try {
+
+            const response = await fetch(
+                API_URL + "?key=" + encodeURIComponent(apiKey),
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        contents: [
+
+                            {
+                                parts: [
+
+                                    {
+                                        text: prompt
+                                    }
+
+                                ]
+                            }
+
+                        ]
+
+                    })
+                }
+            );
+
+
+            const data = await response.json();
+
+
+            console.log(
+                "Gemini Response:",
+                data
+            );
+
+
+            if (response.ok) {
+
+                return data;
+
+            }
+
+
+            if (
+                response.status === 429 ||
+                response.status >= 500
+            ) {
+
+                if (attempt < maxAttempts) {
+
+                    const retryDelay = Math.min(
+                        2000 * (2 ** (attempt - 1)),
+                        16000
+                    );
+
+                    document.getElementById(
+                        "emailResult"
+                    ).innerText =
+                        "⏳ Gemini is busy. Retrying in " +
+                        (retryDelay / 1000) +
+                        " seconds... (" +
+                        attempt +
+                        "/" +
+                        (maxAttempts - 1) +
+                        ")";
+
+
+                    await new Promise(
+                        resolve =>
+                            setTimeout(resolve, retryDelay)
+                    );
+
+                    continue;
+
+                }
+
+            }
+
+            const apiError = new Error(
+
+                data.error?.message ||
+                "Gemini API error"
+
+            );
+            apiError.isApiError = true;
+            throw apiError;
+
+
+        } catch (error) {
+
+            if (attempt === maxAttempts || error.isApiError) {
+
+                throw error;
+
+            }
+
+        }
+
+    }
+
+}
+
+
+async function generateEmail() {
+
+    const recipient =
+        document.getElementById(
+            "recipient"
+        ).value.trim();
+
+
+    const purpose =
+        document.getElementById(
+            "purpose"
+        ).value.trim();
+
+
+    const tone =
+        document.getElementById(
+            "tone"
+        ).value;
+
+
+    const points =
+        document.getElementById(
+            "points"
+        ).value.trim();
+
+    const apiKey =
+        document.getElementById(
+            "apiKey"
+        ).value.trim();
+
+
+    const result =
+        document.getElementById(
+            "emailResult"
+        );
+
+
+    const copyButton =
+        document.getElementById(
+            "copyButton"
+        );
+
+
+    const generateButton =
+        document.getElementById(
+            "generateButton"
+        );
+
+
+
+    if (!apiKey) {
+
+        result.innerText =
+            "❌ Please enter your Gemini API key.";
+
+        return;
+
+    }
+
+
+    if (
+        !recipient ||
+        !purpose ||
+        !points
+    ) {
+
+        result.innerText =
+            "⚠️ Please fill in all the fields.";
+
+        return;
+
+    }
+
+
+    generateButton.disabled = true;
+
+    generateButton.innerText =
+        "🤖 Generating...";
+
+    copyButton.style.display =
+        "none";
+
+
+    result.innerText =
+        "🤖 Creating your email...";
+
+
+    const prompt = `
+
+You are an expert professional email writer.
+
+Create a complete email using the information below.
+
+Recipient:
+${recipient}
+
+Purpose:
+${purpose}
+
+Tone:
+${tone}
+
+Important Points:
+${points}
+
+
+Requirements:
+
+1. Create a suitable subject line.
+2. Write a clear and professional email.
+3. Keep the email concise.
+4. Use proper email formatting.
+5. Include greeting.
+6. Include the main message.
+7. Include a professional closing.
+8. Do not explain your answer.
+9. Return only the final email.
+
+`;
+
+
+    try {
+
+
+
+        const data =
+            await callGemini(
+                prompt,
+                apiKey
+            );
+
+
+     
+        if (
+            data.candidates &&
+            data.candidates.length > 0
+        ) {
+
+
+            const email =
+                data.candidates[0]
+                .content
+                .parts[0]
+                .text;
+
+
+            result.innerText =
+                email;
+
+
+            copyButton.style.display =
+                "block";
+
+
+        } else {
+
+
+            result.innerText =
+                "❌ Gemini returned an empty response.";
+
+
+            console.log(data);
+
+        }
+
+
+    } catch (error) {
+
+
+        result.innerText =
+            "❌ Gemini API Error:\n\n" +
+            error.message;
+
+
+        console.error(
+            "Gemini Error:",
+            error
+        );
+
+    }
+
+
+
+    generateButton.disabled =
+        false;
+
+    generateButton.innerText =
+        "✨ Generate Email";
+
+}
+
+
+function copyEmail() {
+
+    const email =
+        document.getElementById(
+            "emailResult"
+        ).innerText;
+
+
+    navigator.clipboard
+        .writeText(email)
+        .then(() => {
+
+            alert(
+                "✅ Email copied successfully!"
+            );
+
+        })
+        .catch(() => {
+
+            alert(
+                "❌ Could not copy the email."
+            );
+
+        });
+
+}
+
+</script>
+
+</body>
+</html>
+
